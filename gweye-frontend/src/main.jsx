@@ -5,8 +5,8 @@ import './styles.css'
 /* ═══════════════════════════════════════════════════════════
    API SERVICE
 ═══════════════════════════════════════════════════════════ */
-const BASE = 'http://localhost:8000/api'
-const MEDIA_BASE = 'http://localhost:8000'
+const BASE = 'https://luxe-shop-cu4v.onrender.com/api'
+const MEDIA_BASE = 'https://luxe-shop-cu4v.onrender.com'
 const imgUrl = (path) => {
   if (!path) return null
   if (path.startsWith('http')) return path
@@ -51,7 +51,7 @@ const API = {
 }
 
 const openWS = (userId = null) =>
-  new WebSocket(`ws://localhost:8000/ws/chat/${userId ? userId + '/' : ''}?token=${getToken()}`)
+  new WebSocket(`wss://luxe-shop-cu4v.onrender.com/ws/chat/${userId ? userId + '/' : ''}?token=${getToken()}`)
 
 /* ═══════════════════════════════════════════════════════════
    CONTEXTS
