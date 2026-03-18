@@ -826,3 +826,26 @@ input, textarea, select { font-family: var(--fb); }
   font-size: 0.7rem; padding: 2px 6px; border-radius: 10px;
 }
 .admin-product-card__img { position: relative; }
+
+/* Carousel */
+.carousel-btn {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  background: rgba(0,0,0,0.5); color: #fff; border: none;
+  width: 28px; height: 28px; border-radius: 50%;
+  font-size: 1.2rem; cursor: pointer; display: flex;
+  align-items: center; justify-content: center;
+  z-index: 2; transition: background 0.2s;
+}
+.carousel-btn:hover { background: rgba(201,169,110,0.8); }
+.carousel-btn--prev { left: 6px; }
+.carousel-btn--next { right: 6px; }
+.carousel-dots {
+  position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 5px; z-index: 2;
+}
+.carousel-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: rgba(255,255,255,0.5); cursor: pointer; transition: background 0.2s;
+}
+.carousel-dot--active { background: var(--gold); }
+.product-card__img { position: relative; }

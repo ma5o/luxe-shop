@@ -319,6 +319,48 @@ function CartSidebar({ onCheckout }) {
 }
 
 /* ═══════════════════════════════════════════════════════════
+   PRODUCT CAROUSEL
+═══════════════════════════════════════════════════════════ */
+function ProductCarousel({ product }) {
+  const [idx, setIdx] = useState(0)
+
+  const allImgs = []
+  if (product.image_url) allImgs.push(product.image_url)
+  else if (product.image) allImgs.push(imgUrl(product.image))
+  if (product.images?.length > 0) {
+    product.images.forEach(img => {
+      const url = img.image_url || imgUrl(img.image)
+      if (url && !allImgs.includes(url)) allImgs.push(url)
+    })
+  }
+
+  const prev = (e) => { e.stopPropagation(); setIdx(i => (i - 1 + allImgs.length) % allImgs.length) }
+  const next = (e) => { e.stopPropagation(); setIdx(i => (i + 1) % allImgs.length) }
+
+  return (
+    <div className="product-card__img">
+      {allImgs.length > 0
+        ? <img src={allImgs[idx]} alt={product.name} />
+        : <div className="product-card__placeholder">📦</div>}
+      {product.stock > 0 && product.stock <= 5 && <span className="product-card__stock-tag">Seulement {product.stock} restants</span>}
+      {product.stock === 0 && <span className="product-card__stock-tag product-card__stock-tag--out">Rupture</span>}
+      {allImgs.length > 1 && (
+        <>
+          <button className="carousel-btn carousel-btn--prev" onClick={prev}>‹</button>
+          <button className="carousel-btn carousel-btn--next" onClick={next}>›</button>
+          <div className="carousel-dots">
+            {allImgs.map((_, i) => (
+              <span key={i} className={`carousel-dot ${i === idx ? 'carousel-dot--active' : ''}`}
+                onClick={e => { e.stopPropagation(); setIdx(i) }} />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
+/* ═══════════════════════════════════════════════════════════
    HOME PAGE  (Boutique)
 ═══════════════════════════════════════════════════════════ */
 function HomePage() {
@@ -388,13 +430,8 @@ function HomePage() {
         <div className="products-grid">
           {products.map(p => (
             <div key={p.id} className="product-card">
-              <div className="product-card__img">
-                {(p.image_url || p.image || p.images?.length > 0)
-                  ? <img src={p.image_url || (p.images?.[0]?.image_url) || imgUrl(p.image)} alt={p.name} />
-                  : <div className="product-card__placeholder">📦</div>}
-                {p.stock > 0 && p.stock <= 5 && <span className="product-card__stock-tag">Seulement {p.stock} restants</span>}
-                {p.stock === 0 && <span className="product-card__stock-tag product-card__stock-tag--out">Rupture</span>}
-              </div>
+              <ProductCarousel product={p} />
+
               <div className="product-card__body">
                 {p.category_name && <span className="product-card__cat">{p.category_name}</span>}
                 <h3 className="product-card__name">{p.name}</h3>
