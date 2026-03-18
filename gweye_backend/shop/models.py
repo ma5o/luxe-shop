@@ -22,7 +22,6 @@ class Product(models.Model):
     is_active   = models.BooleanField(default=True)
     created_at  = models.DateTimeField(auto_now_add=True)
 
-    # Image principale (gardée pour compatibilité)
     image = models.ImageField(upload_to=product_image_path, blank=True, null=True)
 
     def __str__(self):
@@ -34,10 +33,22 @@ class Product(models.Model):
 
     @property
     def all_images(self):
-        images = list(self.images.values_list('image', flat=True))
-        if self.image and str(self.image) not in images:
-            images.insert(0, str(self.image))
-        return images
+        urls = []
+        # Image principale
+        if self.image:
+            try:
+                urls.append(self.image.url)
+            except Exception:
+                pass
+        # Images supplémentaires
+        for img in self.images.all():
+            try:
+                url = img.image.url
+                if url not in urls:
+                    urls.append(url)
+            except Exception:
+                pass
+        return urls
 
 
 class ProductImage(models.Model):

@@ -323,6 +323,11 @@ function CartSidebar({ onCheckout }) {
 ═══════════════════════════════════════════════════════════ */
 function ProductCarousel({ product }) {
   const allImgs = useMemo(() => {
+    // Utilise all_images du backend (URLs Cloudinary complètes)
+    if (product.all_images?.length > 0) {
+      return product.all_images.filter(Boolean)
+    }
+    // Fallback
     const imgs = []
     if (product.image_url) imgs.push(product.image_url)
     else if (product.image) imgs.push(imgUrl(product.image))
@@ -333,7 +338,7 @@ function ProductCarousel({ product }) {
       })
     }
     return imgs
-  }, [product.id, product.image_url, product.image, product.images])
+  }, [product.id, product.all_images, product.image_url, product.image, product.images])
 
   const [idx, setIdx] = useState(0)
 
