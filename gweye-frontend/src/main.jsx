@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, createContext, useContext } from 'react'
+import { useState, useEffect, useRef, createContext, useContext, useMemo } from 'react'
 import ReactDOM from 'react-dom/client'
 import './styles.css'
 
@@ -322,17 +322,20 @@ function CartSidebar({ onCheckout }) {
    PRODUCT CAROUSEL
 ═══════════════════════════════════════════════════════════ */
 function ProductCarousel({ product }) {
-  const [idx, setIdx] = useState(0)
+  const allImgs = useMemo(() => {
+    const imgs = []
+    if (product.image_url) imgs.push(product.image_url)
+    else if (product.image) imgs.push(imgUrl(product.image))
+    if (product.images?.length > 0) {
+      product.images.forEach(img => {
+        const url = img.image_url || imgUrl(img.image)
+        if (url && !imgs.includes(url)) imgs.push(url)
+      })
+    }
+    return imgs
+  }, [product.id, product.image_url, product.image, product.images])
 
-  const allImgs = []
-  if (product.image_url) allImgs.push(product.image_url)
-  else if (product.image) allImgs.push(imgUrl(product.image))
-  if (product.images?.length > 0) {
-    product.images.forEach(img => {
-      const url = img.image_url || imgUrl(img.image)
-      if (url && !allImgs.includes(url)) allImgs.push(url)
-    })
-  }
+  const [idx, setIdx] = useState(0)
 
   const prev = (e) => { e.stopPropagation(); setIdx(i => (i - 1 + allImgs.length) % allImgs.length) }
   const next = (e) => { e.stopPropagation(); setIdx(i => (i + 1) % allImgs.length) }
