@@ -41,7 +41,8 @@ const API = {
   uploadPayment:(id,fd)=> fetch(`${BASE}/shop/orders/${id}/payment/`, { method:'POST', headers: fileHeaders(), body: fd }).then(handleRes),
   createProduct:(fd)=> fetch(`${BASE}/shop/admin/products/`,    { method:'POST',   headers: fileHeaders(), body: fd }).then(handleRes),
   updateProduct:(id,fd)=>fetch(`${BASE}/shop/admin/products/${id}/`, { method:'PATCH', headers: fileHeaders(), body: fd }).then(handleRes),
-  deleteProduct:(id)=> fetch(`${BASE}/shop/admin/products/${id}/`,   { method:'DELETE', headers: authHeaders() }).then(handleRes),
+  deleteProduct:(id)=> fetch(`${BASE}/shop/admin/products/${id}/delete/`,   { method:'DELETE', headers: authHeaders() }).then(handleRes),
+  deleteProductImage:(id)=> fetch(`${BASE}/shop/admin/products/images/${id}/delete/`, { method:'DELETE', headers: authHeaders() }).then(handleRes),
   adminOrders: (s) => fetch(`${BASE}/shop/admin/orders/${s?'?status='+s:''}`, { headers: authHeaders() }).then(handleRes),
   updateOrderStatus:(id,status)=> fetch(`${BASE}/shop/admin/orders/${id}/status/`, { method:'PATCH', headers: authHeaders(), body: JSON.stringify({status}) }).then(handleRes),
   // Chat
@@ -388,8 +389,8 @@ function HomePage() {
           {products.map(p => (
             <div key={p.id} className="product-card">
               <div className="product-card__img">
-                {p.image
-                  ? <img src={imgUrl(p.image)} alt={p.name} />
+                {(p.image_url || p.image || p.images?.length > 0)
+                  ? <img src={p.image_url || (p.images?.[0]?.image_url) || imgUrl(p.image)} alt={p.name} />
                   : <div className="product-card__placeholder">📦</div>}
                 {p.stock > 0 && p.stock <= 5 && <span className="product-card__stock-tag">Seulement {p.stock} restants</span>}
                 {p.stock === 0 && <span className="product-card__stock-tag product-card__stock-tag--out">Rupture</span>}
@@ -686,7 +687,8 @@ function AdminProducts() {
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing]   = useState(null)
   const [form, setForm]         = useState({ name:'', description:'', price:'', stock:'' })
-  const [imgFile, setImgFile]   = useState(null)
+  const [imgFiles, setImgFiles] = useState([])
+  const [previews, setPreviews] = useState([])
   const [loading, setLoading]   = useState(false)
   const [error, setError]       = useState('')
 
@@ -696,7 +698,13 @@ function AdminProducts() {
   const openForm = (p = null) => {
     setEditing(p)
     setForm(p ? { name: p.name, description: p.description, price: p.price, stock: p.stock } : { name:'', description:'', price:'', stock:'' })
-    setImgFile(null); setError(''); setShowForm(true)
+    setImgFiles([]); setPreviews([]); setError(''); setShowForm(true)
+  }
+
+  const onImages = (e) => {
+    const files = Array.from(e.target.files)
+    setImgFiles(files)
+    setPreviews(files.map(f => URL.createObjectURL(f)))
   }
 
   const handleSubmit = async (e) => {
@@ -705,7 +713,10 @@ function AdminProducts() {
       const fd = new FormData()
       Object.entries(form).forEach(([k, v]) => fd.append(k, v))
       fd.append('is_active', 'true')
-      if (imgFile) fd.append('image', imgFile)
+      if (imgFiles.length > 0) {
+        fd.append('image', imgFiles[0])
+        imgFiles.forEach(f => fd.append('images', f))
+      }
       editing ? await API.updateProduct(editing.id, fd) : await API.createProduct(fd)
       setShowForm(false); load()
     } catch (e) { setError(e.message) }
@@ -715,6 +726,10 @@ function AdminProducts() {
   const handleDelete = async (id) => {
     if (!confirm('Supprimer ce produit ?')) return
     await API.deleteProduct(id).catch(() => {}); load()
+  }
+
+  const handleDeleteImage = async (imgId) => {
+    await API.deleteProductImage(imgId).catch(() => {}); load()
   }
 
   const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }))
@@ -732,16 +747,34 @@ function AdminProducts() {
             <Alert type="error" msg={error} />
             <div className="field-row">
               <InputField label="Nom *"      value={form.name}  onChange={set('name')}  placeholder="Nom du produit" required />
-              <InputField label="Prix (€) *" value={form.price} onChange={set('price')} placeholder="0.00" type="number" required />
+              <InputField label="Prix (MRU) *" value={form.price} onChange={set('price')} placeholder="0.00" type="number" required />
             </div>
             <InputField label="Description" value={form.description} onChange={set('description')} placeholder="Description..." />
             <div className="field-row">
               <InputField label="Stock" value={form.stock} onChange={set('stock')} placeholder="0" type="number" />
               <div className="field">
-                <label className="field__label">Image</label>
-                <input className="field__input" type="file" accept="image/*" onChange={e => setImgFile(e.target.files[0])} />
+                <label className="field__label">Photos (plusieurs possibles)</label>
+                <input className="field__input" type="file" accept="image/*" multiple onChange={onImages} />
               </div>
             </div>
+            {previews.length > 0 && (
+              <div className="img-previews">
+                {previews.map((src, i) => <img key={i} src={src} alt={`preview ${i}`} className="img-preview-thumb" />)}
+              </div>
+            )}
+            {editing && editing.images?.length > 0 && (
+              <div className="existing-images">
+                <label className="field__label">Photos existantes</label>
+                <div className="img-previews">
+                  {editing.images.map(img => (
+                    <div key={img.id} className="img-preview-wrap">
+                      <img src={img.image_url || imgUrl(img.image)} alt="photo" className="img-preview-thumb" />
+                      <button type="button" className="img-preview-del" onClick={() => handleDeleteImage(img.id)}>✕</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             <div className="modal__footer">
               <button type="button" className="btn btn--ghost" onClick={() => setShowForm(false)}>Annuler</button>
               <button type="submit" className="btn btn--gold" disabled={loading}>{loading ? <Spinner sm /> : editing ? 'Modifier' : 'Créer'}</button>
@@ -754,7 +787,12 @@ function AdminProducts() {
         {products.map(p => (
           <div key={p.id} className="admin-product-card">
             <div className="admin-product-card__img">
-              {p.image ? <img src={imgUrl(p.image)} alt={p.name} /> : '📦'}
+              {p.image_url || p.image
+                ? <img src={p.image_url || imgUrl(p.image)} alt={p.name} />
+                : p.images?.[0]?.image_url
+                ? <img src={p.images[0].image_url} alt={p.name} />
+                : '📦'}
+              {p.images?.length > 0 && <span className="img-count-badge">{p.images.length + (p.image ? 1 : 0)} 📷</span>}
             </div>
             <div className="admin-product-card__info">
               <h4>{p.name}</h4>

@@ -1,49 +1,66 @@
 from rest_framework import serializers
-from .models import Product, Category, Order, OrderItem
+from .models import Product, ProductImage, Category, Order, OrderItem
+
+
+class ProductImageSerializer(serializers.ModelSerializer):
+    image_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ProductImage
+        fields = ['id', 'image', 'image_url', 'order']
+
+    def get_image_url(self, obj):
+        if obj.image:
+            return obj.image.url
+        return None
+
+
+class ProductSerializer(serializers.ModelSerializer):
+    category_name = serializers.ReadOnlyField()
+    image_url     = serializers.SerializerMethodField()
+    images        = ProductImageSerializer(many=True, read_only=True)
+    all_images    = serializers.ReadOnlyField()
+
+    class Meta:
+        model  = Product
+        fields = ['id', 'name', 'description', 'price', 'stock', 'category',
+                  'category_name', 'image', 'image_url', 'images', 'all_images', 'is_active', 'created_at']
+
+    def get_image_url(self, obj):
+        if obj.image:
+            return obj.image.url
+        return None
 
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
-        model = Category
-        fields = '__all__'
-
-
-class ProductSerializer(serializers.ModelSerializer):
-    category_name = serializers.CharField(source='category.name', read_only=True)
-
-    class Meta:
-        model = Product
-        fields = '__all__'
+        model  = Category
+        fields = ['id', 'name', 'slug']
 
 
 class OrderItemSerializer(serializers.ModelSerializer):
-    product_name = serializers.CharField(source='product.name', read_only=True)
-    product_image = serializers.ImageField(source='product.image', read_only=True)
-    total = serializers.SerializerMethodField()
+    product_name = serializers.ReadOnlyField()
+    total        = serializers.ReadOnlyField()
 
     class Meta:
-        model = OrderItem
-        fields = '__all__'
-
-    def get_total(self, obj):
-        return obj.get_total()
+        model  = OrderItem
+        fields = ['id', 'product', 'product_name', 'quantity', 'price', 'total']
 
 
 class OrderSerializer(serializers.ModelSerializer):
-    items = OrderItemSerializer(many=True, read_only=True)
-    username = serializers.CharField(source='user.username', read_only=True)
-    user_email = serializers.CharField(source='user.email', read_only=True)
-    status_display = serializers.CharField(source='get_status_display', read_only=True)
+    items        = OrderItemSerializer(many=True, read_only=True)
+    status_display = serializers.ReadOnlyField()
+    username     = serializers.SerializerMethodField()
+    user_email   = serializers.SerializerMethodField()
 
     class Meta:
-        model = Order
-        fields = '__all__'
-        read_only_fields = ['user', 'created_at', 'updated_at']
+        model  = Order
+        fields = ['id', 'user', 'username', 'user_email', 'status', 'status_display',
+                  'shipping_address', 'notes', 'total_price', 'payment_screenshot',
+                  'items', 'created_at']
 
+    def get_username(self, obj):
+        return obj.user.username
 
-class CreateOrderSerializer(serializers.Serializer):
-    items = serializers.ListField(
-        child=serializers.DictField()
-    )
-    shipping_address = serializers.CharField(required=False, allow_blank=True)
-    notes = serializers.CharField(required=False, allow_blank=True)
+    def get_user_email(self, obj):
+        return obj.user.email
