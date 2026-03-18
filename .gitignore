@@ -1,0 +1,7 @@
+gweye_backend/venv/
+gweye_backend/__pycache__/
+gweye_backend/*.pyc
+gweye_backend/db.sqlite3
+gweye_backend/media/
+*.pyc
+__pycache__/
