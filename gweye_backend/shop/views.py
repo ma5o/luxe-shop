@@ -1,12 +1,10 @@
 from rest_framework.decorators import api_view, permission_classes, parser_classes
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
-from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
 from .models import Product, ProductImage, Category, Order, OrderItem
 from .serializers import ProductSerializer, CategorySerializer, OrderSerializer
 
-
-# ─── SHOP PUBLIC ────────────────────────────────────────────
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -33,7 +31,6 @@ def create_order(request):
     items_data = request.data.get('items', [])
     if not items_data:
         return Response({'error': 'Aucun article'}, status=400)
-
     total = 0
     order = Order.objects.create(
         user=request.user,
@@ -41,7 +38,6 @@ def create_order(request):
         notes=request.data.get('notes', ''),
         total_price=0
     )
-
     for item in items_data:
         try:
             product = Product.objects.get(id=item['product_id'], is_active=True)
@@ -50,7 +46,6 @@ def create_order(request):
             total += product.price * qty
         except Product.DoesNotExist:
             pass
-
     order.total_price = total
     order.save()
     return Response(OrderSerializer(order).data, status=201)
@@ -71,10 +66,8 @@ def upload_payment(request, order_id):
         order = Order.objects.get(id=order_id, user=request.user)
     except Order.DoesNotExist:
         return Response({'error': 'Commande introuvable'}, status=404)
-
     if 'payment_screenshot' not in request.FILES:
         return Response({'error': 'Aucun fichier'}, status=400)
-
     order.payment_screenshot = request.FILES['payment_screenshot']
     order.status = 'payment_uploaded'
     order.save()
@@ -97,14 +90,27 @@ def admin_create_product(request):
     is_active_val = data.get('is_active', 'true')
     data['is_active'] = str(is_active_val).lower() in ('true', '1', 'yes')
 
+    # Retire 'image' du data — on gère les images manuellement
+    data.pop('image', None)
+
     serializer = ProductSerializer(data=data)
     if serializer.is_valid():
         product = serializer.save()
 
-        # Traiter les images supplémentaires
+        # Toutes les images vont dans ProductImage
         images = request.FILES.getlist('images')
+        if not images:
+            # Fallback si envoyé comme 'image' unique
+            img = request.FILES.get('image')
+            if img:
+                images = [img]
+
         for i, img in enumerate(images):
-            ProductImage.objects.create(product=product, image=img, order=i)
+            pi = ProductImage.objects.create(product=product, image=img, order=i)
+            # La première image devient aussi l'image principale
+            if i == 0:
+                product.image = pi.image
+                product.save()
 
         return Response(ProductSerializer(product).data, status=201)
     return Response(serializer.errors, status=400)
@@ -122,13 +128,19 @@ def admin_update_product(request, product_id):
     data = request.data.copy()
     if 'is_active' in data:
         data['is_active'] = str(data['is_active']).lower() in ('true', '1', 'yes')
+    data.pop('image', None)
 
     serializer = ProductSerializer(product, data=data, partial=True)
     if serializer.is_valid():
         product = serializer.save()
 
-        # Nouvelles images supplémentaires
+        # Nouvelles images
         images = request.FILES.getlist('images')
+        if not images:
+            img = request.FILES.get('image')
+            if img:
+                images = [img]
+
         for i, img in enumerate(images):
             ProductImage.objects.create(product=product, image=img, order=product.images.count() + i)
 

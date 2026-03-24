@@ -33,19 +33,19 @@ class Product(models.Model):
 
     @property
     def all_images(self):
+        # Retourne seulement les URLs des ProductImages (pas de doublon)
         urls = []
-        # Image principale
-        if self.image:
-            try:
-                urls.append(self.image.url)
-            except Exception:
-                pass
-        # Images supplémentaires
         for img in self.images.all():
             try:
                 url = img.image.url
-                if url not in urls:
+                if url and url not in urls:
                     urls.append(url)
+            except Exception:
+                pass
+        # Si pas de ProductImages, fallback sur image principale
+        if not urls and self.image:
+            try:
+                urls.append(self.image.url)
             except Exception:
                 pass
         return urls
