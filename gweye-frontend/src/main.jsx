@@ -759,7 +759,7 @@ function AdminProducts() {
       Object.entries(form).forEach(([k, v]) => fd.append(k, v))
       fd.append('is_active', 'true')
       if (imgFiles.length > 0) {
-        fd.append('image', imgFiles[0])
+        // Envoie toutes les images comme 'images' seulement (pas de doublon)
         imgFiles.forEach(f => fd.append('images', f))
       }
       editing ? await API.updateProduct(editing.id, fd) : await API.createProduct(fd)
