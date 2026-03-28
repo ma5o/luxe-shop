@@ -158,7 +158,7 @@ function AuthPages() {
       <div className={`auth-card ${mode === 'register' ? 'auth-card--wide' : ''}`}>
         <div className="auth-brand">
           <span className="auth-logo">✦</span>
-          <h1 className="auth-title">LUXE<span>SHOP</span></h1>
+          <h1 className="auth-title">GLOVA</h1>
           <p className="auth-sub">{mode === 'login' ? 'Connectez-vous pour continuer' : 'Créez votre compte gratuit'}</p>
         </div>
 
@@ -215,7 +215,7 @@ function Navbar({ page, navigate }) {
     <nav className="navbar">
       <div className="navbar__inner">
         <button className="navbar__brand" onClick={() => navigate('home')}>
-          <span className="navbar__logo">✦</span> LUXE<em>SHOP</em>
+          <span className="navbar__logo">✦</span> GLOVA
         </button>
 
         <div className={`navbar__links ${menuOpen ? 'navbar__links--open' : ''}`}>
@@ -323,22 +323,24 @@ function CartSidebar({ onCheckout }) {
 ═══════════════════════════════════════════════════════════ */
 function ProductCarousel({ product }) {
   const allImgs = useMemo(() => {
-    // Utilise all_images du backend (URLs Cloudinary complètes)
-    if (product.all_images?.length > 0) {
-      return product.all_images.filter(Boolean)
-    }
-    // Fallback
     const imgs = []
-    if (product.image_url) imgs.push(product.image_url)
-    else if (product.image) imgs.push(imgUrl(product.image))
+    // Priorité: images[] avec image_url (Cloudinary direct)
     if (product.images?.length > 0) {
       product.images.forEach(img => {
-        const url = img.image_url || imgUrl(img.image)
-        if (url && !imgs.includes(url)) imgs.push(url)
+        const url = img.image_url
+        if (url && url.startsWith('http') && !imgs.includes(url)) imgs.push(url)
       })
     }
+    // Fallback sur all_images
+    if (imgs.length === 0 && product.all_images?.length > 0) {
+      product.all_images.filter(Boolean).forEach(url => {
+        if (!imgs.includes(url)) imgs.push(url)
+      })
+    }
+    // Fallback final sur image_url principal
+    if (imgs.length === 0 && product.image_url) imgs.push(product.image_url)
     return imgs
-  }, [product.id, product.all_images, product.image_url, product.image, product.images])
+  }, [product.id, product.images, product.all_images, product.image_url])
 
   const [idx, setIdx] = useState(0)
 
@@ -681,7 +683,7 @@ function ChatWidget() {
             <div className="chat-box__head-info">
               <div className={`status-dot ${connected ? 'status-dot--on' : 'status-dot--off'}`} />
               <div>
-                <div className="chat-box__head-title">Support LuxeShop</div>
+                <div className="chat-box__head-title">Support Glova</div>
                 <div className="chat-box__head-sub">{connected ? 'En ligne' : 'Hors ligne'}</div>
               </div>
             </div>
