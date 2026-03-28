@@ -89,30 +89,33 @@ def admin_create_product(request):
     data = request.data.copy()
     is_active_val = data.get('is_active', 'true')
     data['is_active'] = str(is_active_val).lower() in ('true', '1', 'yes')
-
-    # Retire 'image' du data — on gère les images manuellement
     data.pop('image', None)
+
+    # Debug
+    all_files = dict(request.FILES.lists())
+    print(f"FILES reçus: {list(all_files.keys())}")
+    for key, files in all_files.items():
+        print(f"  {key}: {len(files)} fichier(s)")
 
     serializer = ProductSerializer(data=data)
     if serializer.is_valid():
         product = serializer.save()
 
-        # Toutes les images vont dans ProductImage
-        images = request.FILES.getlist('images')
-        if not images:
-            # Fallback si envoyé comme 'image' unique
-            img = request.FILES.get('image')
-            if img:
-                images = [img]
+        # Récupérer toutes les images — essayer plusieurs clés
+        images = []
+        for key in request.FILES:
+            images.extend(request.FILES.getlist(key))
+
+        print(f"Total images trouvées: {len(images)}")
 
         for i, img in enumerate(images):
             pi = ProductImage.objects.create(product=product, image=img, order=i)
-            # La première image devient aussi l'image principale
             if i == 0:
                 product.image = pi.image
                 product.save()
 
         return Response(ProductSerializer(product).data, status=201)
+    print(f"Erreurs serializer: {serializer.errors}")
     return Response(serializer.errors, status=400)
 
 
@@ -134,12 +137,11 @@ def admin_update_product(request, product_id):
     if serializer.is_valid():
         product = serializer.save()
 
-        # Nouvelles images
-        images = request.FILES.getlist('images')
-        if not images:
-            img = request.FILES.get('image')
-            if img:
-                images = [img]
+        images = []
+        for key in request.FILES:
+            images.extend(request.FILES.getlist(key))
+
+        print(f"Update - Total images: {len(images)}")
 
         for i, img in enumerate(images):
             ProductImage.objects.create(product=product, image=img, order=product.images.count() + i)
