@@ -849,3 +849,14 @@ input, textarea, select { font-family: var(--fb); }
 }
 .carousel-dot--active { background: var(--gold); }
 .product-card__img { position: relative; }
+
+/* Password hints */
+.pwd-hints {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  margin: -8px 0 12px;
+  font-size: 0.78rem;
+}
+.hint--ok { color: #4ade80; }
+.hint--bad { color: rgba(255,255,255,0.35); }

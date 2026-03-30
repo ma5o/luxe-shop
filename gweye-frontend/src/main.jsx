@@ -146,8 +146,31 @@ function AuthPages() {
 
   const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }))
 
+  const validate = () => {
+    if (mode === 'register') {
+      if (!form.username || form.username.length < 3)
+        return "Le nom d'utilisateur doit contenir au moins 3 caractères"
+      if (!/^[a-zA-Z0-9_]+$/.test(form.username))
+        return "Le nom d'utilisateur ne peut contenir que des lettres, chiffres et _"
+      if (!form.email || !/^[^@]+@[^@]+\.[^@]+$/.test(form.email))
+        return "Veuillez entrer une adresse email valide"
+      if (!form.password || form.password.length < 8)
+        return "Le mot de passe doit contenir au moins 8 caractères"
+      if (!/[A-Z]/.test(form.password))
+        return "Le mot de passe doit contenir au moins une lettre majuscule"
+      if (!/[0-9]/.test(form.password))
+        return "Le mot de passe doit contenir au moins un chiffre"
+      if (form.password !== form.password2)
+        return "Les mots de passe ne correspondent pas"
+    }
+    return null
+  }
+
   const handleSubmit = async (e) => {
-    e.preventDefault(); setLoading(true); setError('')
+    e.preventDefault()
+    const validationError = validate()
+    if (validationError) { setError(validationError); return }
+    setLoading(true); setError('')
     try { mode === 'login' ? await login(form) : await register(form) }
     catch (err) { setError(err.message) }
     finally { setLoading(false) }
@@ -179,10 +202,20 @@ function AuthPages() {
           )}
 
           {mode === 'register' ? (
+            <>
             <div className="field-row">
               <InputField label="Mot de passe *"  type="password" value={form.password}  onChange={set('password')}  placeholder="••••••••" required />
               <InputField label="Confirmer *"     type="password" value={form.password2} onChange={set('password2')} placeholder="••••••••" required />
             </div>
+            {form.password && (
+              <div className="pwd-hints">
+                <span className={form.password.length >= 8 ? 'hint--ok' : 'hint--bad'}>✓ 8 caractères minimum</span>
+                <span className={/[A-Z]/.test(form.password) ? 'hint--ok' : 'hint--bad'}>✓ Une majuscule</span>
+                <span className={/[0-9]/.test(form.password) ? 'hint--ok' : 'hint--bad'}>✓ Un chiffre</span>
+                <span className={form.password === form.password2 && form.password2 ? 'hint--ok' : 'hint--bad'}>✓ Mots de passe identiques</span>
+              </div>
+            )}
+            </>
           ) : (
             <InputField label="Mot de passe" type="password" value={form.password} onChange={set('password')} placeholder="••••••••" required />
           )}
@@ -324,23 +357,22 @@ function CartSidebar({ onCheckout }) {
 function ProductCarousel({ product }) {
   const allImgs = useMemo(() => {
     const imgs = []
-    // Priorité: images[] avec image_url (Cloudinary direct)
+    // 1. Images supplémentaires (ProductImage) avec URLs Cloudinary
     if (product.images?.length > 0) {
       product.images.forEach(img => {
-        const url = img.image_url
-        if (url && url.startsWith('http') && !imgs.includes(url)) imgs.push(url)
+        const url = img.image_url || (typeof img.image === 'string' && img.image.startsWith('http') ? img.image : null)
+        if (url && !imgs.includes(url)) imgs.push(url)
       })
     }
-    // Fallback sur all_images
+    // 2. Image principale si pas déjà incluse
+    const mainUrl = product.image_url || (typeof product.image === 'string' && product.image.startsWith('http') ? product.image : null)
+    if (mainUrl && !imgs.includes(mainUrl)) imgs.push(mainUrl)
+    // 3. all_images fallback
     if (imgs.length === 0 && product.all_images?.length > 0) {
-      product.all_images.filter(Boolean).forEach(url => {
-        if (!imgs.includes(url)) imgs.push(url)
-      })
+      product.all_images.forEach(url => { if (url && !imgs.includes(url)) imgs.push(url) })
     }
-    // Fallback final sur image_url principal
-    if (imgs.length === 0 && product.image_url) imgs.push(product.image_url)
-    return imgs
-  }, [product.id, product.images, product.all_images, product.image_url])
+    return imgs.filter(Boolean)
+  }, [product.id, product.images, product.image_url, product.image, product.all_images])
 
   const [idx, setIdx] = useState(0)
 
