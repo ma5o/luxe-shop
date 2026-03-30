@@ -781,9 +781,22 @@ function AdminProducts() {
   }
 
   const onImages = (e) => {
-    const files = Array.from(e.target.files)
-    setImgFiles(files)
-    setPreviews(files.map(f => URL.createObjectURL(f)))
+    const newFiles = Array.from(e.target.files)
+    setImgFiles(prev => {
+      const combined = [...prev, ...newFiles]
+      setPreviews(combined.map(f => URL.createObjectURL(f)))
+      return combined
+    })
+    // Reset input pour permettre re-sélection
+    e.target.value = ''
+  }
+
+  const removePreview = (idx) => {
+    setImgFiles(prev => {
+      const updated = prev.filter((_, i) => i !== idx)
+      setPreviews(updated.map(f => URL.createObjectURL(f)))
+      return updated
+    })
   }
 
   const handleSubmit = async (e) => {
@@ -838,9 +851,15 @@ function AdminProducts() {
             </div>
             {previews.length > 0 && (
               <div className="img-previews">
-                {previews.map((src, i) => <img key={i} src={src} alt={`preview ${i}`} className="img-preview-thumb" />)}
+                {previews.map((src, i) => (
+                  <div key={i} className="img-preview-wrap">
+                    <img src={src} alt={`preview ${i}`} className="img-preview-thumb" />
+                    <button type="button" className="img-preview-del" onClick={() => removePreview(i)}>✕</button>
+                  </div>
+                ))}
               </div>
             )}
+            {imgFiles.length > 0 && <p className="text-muted" style={{fontSize:'0.8rem',margin:'-8px 0 8px'}}>{imgFiles.length} photo(s) sélectionnée(s) — cliquez encore pour en ajouter</p>}
             {editing && editing.images?.length > 0 && (
               <div className="existing-images">
                 <label className="field__label">Photos existantes</label>
