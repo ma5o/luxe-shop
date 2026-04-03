@@ -12,6 +12,8 @@ ALLOWED_HOSTS = [
     '127.0.0.1',
     '.onrender.com',
     'luxe-shop-44yn.vercel.app',
+    'glova.cc',
+    'www.glova.cc',
 ]
 
 INSTALLED_APPS = [
@@ -65,7 +67,6 @@ TEMPLATES = [
 WSGI_APPLICATION = 'gweye_backend.wsgi.application'
 ASGI_APPLICATION = 'gweye_backend.asgi.application'
 
-# PostgreSQL
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -77,7 +78,6 @@ DATABASES = {
     }
 }
 
-# Si DATABASE_URL est défini, l'utiliser directement
 DATABASE_URL = os.environ.get('DATABASE_URL')
 if DATABASE_URL:
     import dj_database_url
@@ -93,12 +93,10 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
-# Static
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# Cloudinary pour les médias
 CLOUDINARY_STORAGE = {
     'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME', 'diudgn62c'),
     'API_KEY':    os.environ.get('CLOUDINARY_API_KEY', '567447133736277'),
@@ -126,6 +124,8 @@ SIMPLE_JWT = {
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "https://luxe-shop-44yn.vercel.app",
+    "https://glova.cc",
+    "https://www.glova.cc",
 ]
 CORS_ALLOW_CREDENTIALS = True
 
